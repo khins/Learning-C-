@@ -15,6 +15,8 @@ int main() {
         cout << "Countdown: " << number << endl;
         number--;
     }
+    cout << "Press Enter to exit...";
+    cin.get();
 
     return 0;
 }

@@ -14,6 +14,8 @@ int main() {
 
     int result = add(4, 6);
     cout << "4 + 6 = " << result << endl;
+    cout << "Press Enter to exit...";
+    cin.get();
 
     return 0;
 }

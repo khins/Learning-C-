@@ -14,6 +14,9 @@ int main() {
     } else {
         cout << "You are a child." << endl;
     }
+    cout << "Press Enter to exit...";
+    cin.ignore(10000, '\n');
+    cin.get();
 
     return 0;
 }

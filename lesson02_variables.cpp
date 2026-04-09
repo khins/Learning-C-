@@ -14,6 +14,8 @@ int main() {
     cout << "Height: " << height << endl;
     cout << "Grade: " << grade << endl;
     cout << "Likes C++: " << likesCpp << endl;
+    cout << "Press Enter to exit...";
+    cin.get();
 
     return 0;
 }
