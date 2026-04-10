@@ -11,6 +11,8 @@ This project is a small learning path for beginner C++ practice.
 5. `lesson05_loops.cpp`
 6. `lesson06_functions.cpp`
 7. `lesson07_arrays.cpp`
+8. `lesson08_vectors.cpp`
+9. `lesson09_strings.cpp`
 
 Open one lesson file at a time and run that file as the active editor tab.
 
