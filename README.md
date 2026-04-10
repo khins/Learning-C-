@@ -10,6 +10,7 @@ This project is a small learning path for beginner C++ practice.
 4. `lesson04_if_statements.cpp`
 5. `lesson05_loops.cpp`
 6. `lesson06_functions.cpp`
+7. `lesson07_arrays.cpp`
 
 Open one lesson file at a time and run that file as the active editor tab.
 
