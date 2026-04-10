@@ -14,6 +14,7 @@ This project is a small learning path for beginner C++ practice.
 8. `lesson08_vectors.cpp`
 9. `lesson09_strings.cpp`
 10. `lesson10_getline.cpp`
+11. `lesson11_nested_loops.cpp`
 
 Open one lesson file at a time and run that file as the active editor tab.
 
