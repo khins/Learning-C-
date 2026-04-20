@@ -16,6 +16,10 @@ This project is a small learning path for beginner C++ practice.
 10. `lesson10_getline.cpp`
 11. `lesson11_nested_loops.cpp`
 12. `lesson12_2d_arrays.cpp`
+13. `lesson13_functions.cpp`
+14. `lesson14_references.cpp`
+15. `lesson15_pointers.cpp`
+16. `lesson16_dynamic_memory.cpp`
 
 Open one lesson file at a time and run that file as the active editor tab.
 
