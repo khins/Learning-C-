@@ -9,6 +9,7 @@ typedef struct sqlite3 sqlite3;
 typedef struct sqlite3_stmt sqlite3_stmt;
 
 #define SQLITE_OK 0
+#define SQLITE_ROW 100
 #define SQLITE_DONE 101
 #define SQLITE_TRANSIENT ((void (*)(void*)) -1)
 
@@ -29,6 +30,8 @@ int sqlite3_bind_text(
 );
 int sqlite3_bind_int(sqlite3_stmt* stmt, int index, int value);
 int sqlite3_step(sqlite3_stmt* stmt);
+int sqlite3_column_int(sqlite3_stmt* stmt, int column);
+const unsigned char* sqlite3_column_text(sqlite3_stmt* stmt, int column);
 int sqlite3_reset(sqlite3_stmt* stmt);
 int sqlite3_clear_bindings(sqlite3_stmt* stmt);
 int sqlite3_finalize(sqlite3_stmt* stmt);
