@@ -5,6 +5,48 @@
 #include "sqlite3.h"
 using namespace std;
 
+struct User {
+    int id;
+    string name;
+    int age;
+};
+
+User mapRowToUser(sqlite3_stmt* stmt) {
+    const unsigned char* nameText = sqlite3_column_text(stmt, 1);
+
+    User user;
+    user.id = sqlite3_column_int(stmt, 0);
+    user.name = nameText ? reinterpret_cast<const char*>(nameText) : "NULL";
+    user.age = sqlite3_column_int(stmt, 2);
+
+    return user;
+}
+
+void printUser(const User& user) {
+    cout << "ID: " << user.id
+         << " | Name: " << user.name
+         << " | Age: " << user.age
+         << endl;
+}
+
+int countUsers(sqlite3* db) {
+    const char* sql = "SELECT COUNT(*) FROM users;";
+    sqlite3_stmt* stmt;
+    int count = 0;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare user count: " << sqlite3_errmsg(db) << endl;
+        return 0;
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        count = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+    return count;
+}
+
 void showUsers(sqlite3* db) {
     const char* sql = "SELECT id, name, age FROM users ORDER BY id;";
     sqlite3_stmt* stmt;
@@ -20,15 +62,8 @@ void showUsers(sqlite3* db) {
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         foundRows = true;
-
-        int id = sqlite3_column_int(stmt, 0);
-        const unsigned char* name = sqlite3_column_text(stmt, 1);
-        int age = sqlite3_column_int(stmt, 2);
-
-        cout << "ID: " << id
-             << " | Name: " << (name ? reinterpret_cast<const char*>(name) : "NULL")
-             << " | Age: " << age
-             << endl;
+        User user = mapRowToUser(stmt);
+        printUser(user);
     }
 
     if (!foundRows) {
@@ -107,15 +142,8 @@ void filterUsersByAge(sqlite3* db) {
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         foundRows = true;
-
-        int id = sqlite3_column_int(stmt, 0);
-        const unsigned char* name = sqlite3_column_text(stmt, 1);
-        int age = sqlite3_column_int(stmt, 2);
-
-        cout << "ID: " << id
-             << " | Name: " << (name ? reinterpret_cast<const char*>(name) : "NULL")
-             << " | Age: " << age
-             << endl;
+        User user = mapRowToUser(stmt);
+        printUser(user);
     }
 
     if (!foundRows) {
@@ -153,15 +181,8 @@ void searchUsersByName(sqlite3* db) {
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         foundRows = true;
-
-        int id = sqlite3_column_int(stmt, 0);
-        const unsigned char* name = sqlite3_column_text(stmt, 1);
-        int age = sqlite3_column_int(stmt, 2);
-
-        cout << "ID: " << id
-             << " | Name: " << (name ? reinterpret_cast<const char*>(name) : "NULL")
-             << " | Age: " << age
-             << endl;
+        User user = mapRowToUser(stmt);
+        printUser(user);
     }
 
     if (!foundRows) {
@@ -171,8 +192,8 @@ void searchUsersByName(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
-void printMenu() {
-    cout << "\n=== SQLite User Menu ===" << endl;
+void printMenu(sqlite3* db) {
+    cout << "\n=== SQLite User Menu (" << countUsers(db) << " users) ===" << endl;
     cout << "1. View all users" << endl;
     cout << "2. Delete user by ID" << endl;
     cout << "3. Filter users by age" << endl;
@@ -197,7 +218,7 @@ int main() {
     string choice;
 
     while (true) {
-        printMenu();
+        printMenu(db);
         getline(cin, choice);
 
         if (choice == "1") {
