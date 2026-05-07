@@ -29,6 +29,8 @@ int sqlite3_bind_text(
 );
 int sqlite3_bind_int(sqlite3_stmt* stmt, int index, int value);
 int sqlite3_step(sqlite3_stmt* stmt);
+int sqlite3_reset(sqlite3_stmt* stmt);
+int sqlite3_clear_bindings(sqlite3_stmt* stmt);
 int sqlite3_finalize(sqlite3_stmt* stmt);
 int sqlite3_exec(
     sqlite3* db,
