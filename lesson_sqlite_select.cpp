@@ -74,12 +74,64 @@ void deleteUserById(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
+void filterUsersByAge(sqlite3* db) {
+    string ageText;
+    int minAge;
+
+    cout << "Show users older than age: ";
+    getline(cin, ageText);
+
+    try {
+        minAge = stoi(ageText);
+    } catch (const invalid_argument&) {
+        cerr << "Invalid age. Please enter a number." << endl;
+        return;
+    } catch (const out_of_range&) {
+        cerr << "Invalid age. The number is too large." << endl;
+        return;
+    }
+
+    const char* sql = "SELECT id, name, age FROM users WHERE age > ? ORDER BY age;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare age filter: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, minAge);
+
+    cout << "\n=== Users Older Than " << minAge << " ===" << endl;
+
+    bool foundRows = false;
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        foundRows = true;
+
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char* name = sqlite3_column_text(stmt, 1);
+        int age = sqlite3_column_int(stmt, 2);
+
+        cout << "ID: " << id
+             << " | Name: " << (name ? reinterpret_cast<const char*>(name) : "NULL")
+             << " | Age: " << age
+             << endl;
+    }
+
+    if (!foundRows) {
+        cout << "No users found." << endl;
+    }
+
+    sqlite3_finalize(stmt);
+}
+
 void printMenu() {
     cout << "\n=== SQLite User Menu ===" << endl;
     cout << "1. View all users" << endl;
     cout << "2. Delete user by ID" << endl;
-    cout << "3. Clear screen" << endl;
-    cout << "4. Quit" << endl;
+    cout << "3. Filter users by age" << endl;
+    cout << "4. Clear screen" << endl;
+    cout << "5. Quit" << endl;
     cout << "Choose an option: ";
 }
 
@@ -106,11 +158,13 @@ int main() {
         } else if (choice == "2") {
             deleteUserById(db);
         } else if (choice == "3") {
-            system("cls");
+            filterUsersByAge(db);
         } else if (choice == "4") {
+            system("cls");
+        } else if (choice == "5") {
             break;
         } else {
-            cout << "Invalid option. Please choose 1, 2, 3, or 4." << endl;
+            cout << "Invalid option. Please choose 1, 2, 3, 4, or 5." << endl;
         }
     }
 
