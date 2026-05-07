@@ -29,6 +29,24 @@ void printUser(const User& user) {
          << endl;
 }
 
+bool readInt(const string& prompt, int& value) {
+    string text;
+
+    cout << prompt;
+    getline(cin, text);
+
+    try {
+        value = stoi(text);
+        return true;
+    } catch (const invalid_argument&) {
+        cerr << "Invalid number. Please enter digits only." << endl;
+        return false;
+    } catch (const out_of_range&) {
+        cerr << "Invalid number. The number is too large." << endl;
+        return false;
+    }
+}
+
 int countUsers(sqlite3* db) {
     const char* sql = "SELECT COUNT(*) FROM users;";
     sqlite3_stmt* stmt;
@@ -74,19 +92,9 @@ void showUsers(sqlite3* db) {
 }
 
 void deleteUserById(sqlite3* db) {
-    string idText;
     int id;
 
-    cout << "Enter user ID to delete: ";
-    getline(cin, idText);
-
-    try {
-        id = stoi(idText);
-    } catch (const invalid_argument&) {
-        cerr << "Invalid ID. Please enter a number." << endl;
-        return;
-    } catch (const out_of_range&) {
-        cerr << "Invalid ID. The number is too large." << endl;
+    if (!readInt("Enter user ID to delete: ", id)) {
         return;
     }
 
@@ -109,20 +117,46 @@ void deleteUserById(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
+void addUser(sqlite3* db) {
+    string name;
+    int age;
+
+    cout << "Enter name: ";
+    getline(cin, name);
+
+    if (name.empty()) {
+        cerr << "Name cannot be empty." << endl;
+        return;
+    }
+
+    if (!readInt("Enter age: ", age)) {
+        return;
+    }
+
+    const char* sql = "INSERT INTO users (name, age) VALUES (?, ?);";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare INSERT: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, age);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        cerr << "Insert failed: " << sqlite3_errmsg(db) << endl;
+    } else {
+        cout << "User added successfully." << endl;
+    }
+
+    sqlite3_finalize(stmt);
+}
+
 void filterUsersByAge(sqlite3* db) {
-    string ageText;
     int minAge;
 
-    cout << "Show users older than age: ";
-    getline(cin, ageText);
-
-    try {
-        minAge = stoi(ageText);
-    } catch (const invalid_argument&) {
-        cerr << "Invalid age. Please enter a number." << endl;
-        return;
-    } catch (const out_of_range&) {
-        cerr << "Invalid age. The number is too large." << endl;
+    if (!readInt("Show users older than age: ", minAge)) {
         return;
     }
 
@@ -196,10 +230,11 @@ void printMenu(sqlite3* db) {
     cout << "\n=== SQLite User Menu (" << countUsers(db) << " users) ===" << endl;
     cout << "1. View all users" << endl;
     cout << "2. Delete user by ID" << endl;
-    cout << "3. Filter users by age" << endl;
-    cout << "4. Search users by name" << endl;
-    cout << "5. Clear screen" << endl;
-    cout << "6. Quit" << endl;
+    cout << "3. Add new user" << endl;
+    cout << "4. Filter users by age" << endl;
+    cout << "5. Search users by name" << endl;
+    cout << "6. Clear screen" << endl;
+    cout << "7. Quit" << endl;
     cout << "Choose an option: ";
 }
 
@@ -226,15 +261,17 @@ int main() {
         } else if (choice == "2") {
             deleteUserById(db);
         } else if (choice == "3") {
-            filterUsersByAge(db);
+            addUser(db);
         } else if (choice == "4") {
-            searchUsersByName(db);
+            filterUsersByAge(db);
         } else if (choice == "5") {
-            system("cls");
+            searchUsersByName(db);
         } else if (choice == "6") {
+            system("cls");
+        } else if (choice == "7") {
             break;
         } else {
-            cout << "Invalid option. Please choose 1, 2, 3, 4, 5, or 6." << endl;
+            cout << "Invalid option. Please choose 1, 2, 3, 4, 5, 6, or 7." << endl;
         }
     }
 
