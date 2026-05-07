@@ -125,13 +125,60 @@ void filterUsersByAge(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
+void searchUsersByName(sqlite3* db) {
+    string searchText;
+
+    cout << "Enter name search text: ";
+    getline(cin, searchText);
+
+    if (searchText.empty()) {
+        cerr << "Search text cannot be empty." << endl;
+        return;
+    }
+
+    string pattern = "%" + searchText + "%";
+    const char* sql = "SELECT id, name, age FROM users WHERE name LIKE ? ORDER BY name;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare name search: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, pattern.c_str(), -1, SQLITE_TRANSIENT);
+
+    cout << "\n=== Users Matching \"" << searchText << "\" ===" << endl;
+
+    bool foundRows = false;
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        foundRows = true;
+
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char* name = sqlite3_column_text(stmt, 1);
+        int age = sqlite3_column_int(stmt, 2);
+
+        cout << "ID: " << id
+             << " | Name: " << (name ? reinterpret_cast<const char*>(name) : "NULL")
+             << " | Age: " << age
+             << endl;
+    }
+
+    if (!foundRows) {
+        cout << "No users found." << endl;
+    }
+
+    sqlite3_finalize(stmt);
+}
+
 void printMenu() {
     cout << "\n=== SQLite User Menu ===" << endl;
     cout << "1. View all users" << endl;
     cout << "2. Delete user by ID" << endl;
     cout << "3. Filter users by age" << endl;
-    cout << "4. Clear screen" << endl;
-    cout << "5. Quit" << endl;
+    cout << "4. Search users by name" << endl;
+    cout << "5. Clear screen" << endl;
+    cout << "6. Quit" << endl;
     cout << "Choose an option: ";
 }
 
@@ -160,11 +207,13 @@ int main() {
         } else if (choice == "3") {
             filterUsersByAge(db);
         } else if (choice == "4") {
-            system("cls");
+            searchUsersByName(db);
         } else if (choice == "5") {
+            system("cls");
+        } else if (choice == "6") {
             break;
         } else {
-            cout << "Invalid option. Please choose 1, 2, 3, 4, or 5." << endl;
+            cout << "Invalid option. Please choose 1, 2, 3, 4, 5, or 6." << endl;
         }
     }
 
