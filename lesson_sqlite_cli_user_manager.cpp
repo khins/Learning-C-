@@ -4,6 +4,15 @@
 
 using namespace std;
 
+// helper functions
+bool isValidName(const string& name) {
+    return !name.empty();
+}
+
+bool isValidAge(int age) {
+    return age >= 0 && age <= 120;
+}
+
 // 🔹 Add User
 void addUser(sqlite3* db) {
     const char* sql = "INSERT INTO users (name, age) VALUES (?, ?);";
@@ -17,8 +26,21 @@ void addUser(sqlite3* db) {
     cout << "Enter name: ";
     getline(cin, name);
 
+    // validate name
+    if (!isValidName(name)) {
+        cout << "Invalid name. Cannot be empty.\n";
+        sqlite3_finalize(stmt);
+        return;
+    }
+
     cout << "Enter age: ";
     cin >> age;
+    // validate age
+    if (!isValidAge(age)) {
+        cout << "Invalid age. Please enter a value between 0 and 120.\n";
+        sqlite3_finalize(stmt);
+        return;
+    }
     cin.ignore();
 
     sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
