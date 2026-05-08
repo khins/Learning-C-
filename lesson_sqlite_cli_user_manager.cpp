@@ -213,7 +213,15 @@ int main() {
         cout << "Choose option: ";
 
         int choice;
-        cin >> choice;
+        if (!(cin >> choice)) {
+            cout << "Invalid menu option.\n";
+
+            cin.clear();
+            cin.ignore(10000, '\n');
+
+            continue;
+        }
+
         cin.ignore();
 
         switch (choice) {
