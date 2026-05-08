@@ -124,6 +124,70 @@ void listUsersWithJobsGrouped(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
+// update job
+void updateJob(sqlite3* db) {
+    const char* sql = "UPDATE jobs SET title = ?, company = ? WHERE id = ?;";
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+
+    int jobId;
+    string title, company;
+
+    cout << "Enter job ID to update: ";
+    cin >> jobId;
+    cin.ignore();
+
+    cout << "Enter new job title: ";
+    getline(cin, title);
+
+    cout << "Enter new company: ";
+    getline(cin, company);
+
+    sqlite3_bind_text(stmt, 1, title.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, company.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, jobId);
+
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        if (sqlite3_changes(db) > 0) {
+            cout << "Job updated successfully!\n";
+        } else {
+            cout << "No job found with that ID.\n";
+        }
+    } else {
+        cout << "Error updating job\n";
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+void deleteJob(sqlite3* db) {
+    const char* sql = "DELETE FROM jobs WHERE id = ?;";
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+
+    int jobId;
+
+    cout << "Enter job ID to delete: ";
+    cin >> jobId;
+    cin.ignore();
+
+    sqlite3_bind_int(stmt, 1, jobId);
+
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        if (sqlite3_changes(db) > 0) {
+            cout << "Job deleted successfully!\n";
+        } else {
+            cout << "No job found with that ID.\n";
+        }
+    } else {
+        cout << "Error deleting job\n";
+    }
+
+    sqlite3_finalize(stmt);
+}
+
 int main() {
     sqlite3* db;
     const char* dbPath = "C:\\python\\learning_python\\example.db";
@@ -143,7 +207,9 @@ int main() {
         cout << "1. Add User\n";
         cout << "2. Add Job\n";
         cout << "3. List Users + Jobs\n";
-        cout << "4. Exit\n";
+        cout << "4. Update Job\n";
+        cout << "5. Delete Job\n";
+        cout << "6. Exit\n";
         cout << "Choose option: ";
 
         int choice;
@@ -161,6 +227,12 @@ int main() {
                 listUsersWithJobsGrouped(db);
                 break;
             case 4:
+                updateJob(db);
+                break;
+            case 5:
+                deleteJob(db);
+                break;
+            case 6:
                 sqlite3_close(db);
                 cout << "Goodbye!\n";
                 cout << "Press Enter to exit...";

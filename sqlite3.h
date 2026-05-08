@@ -35,6 +35,7 @@ const unsigned char* sqlite3_column_text(sqlite3_stmt* stmt, int column);
 int sqlite3_reset(sqlite3_stmt* stmt);
 int sqlite3_clear_bindings(sqlite3_stmt* stmt);
 int sqlite3_finalize(sqlite3_stmt* stmt);
+int sqlite3_changes(sqlite3* db);
 int sqlite3_exec(
     sqlite3* db,
     const char* sql,
