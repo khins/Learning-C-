@@ -66,8 +66,7 @@ void addJob(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
-// 🔹 List Users + Jobs (JOIN)
-void listUsersWithJobs(sqlite3* db) {
+void listUsersWithJobsGrouped(sqlite3* db) {
     const char* sql =
         "SELECT u.id, u.name, u.age, j.title, j.company "
         "FROM users u "
@@ -75,12 +74,15 @@ void listUsersWithJobs(sqlite3* db) {
         "ORDER BY u.id;";
 
     sqlite3_stmt* stmt;
-
     sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
 
-    cout << "\n--- Users + Jobs ---\n";
+    cout << "\n--- Users + Jobs (Grouped) ---\n";
+
+    int currentUserId = -1;
+    bool hasJob = false;
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
+
         int id = sqlite3_column_int(stmt, 0);
         const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
         int age = sqlite3_column_int(stmt, 2);
@@ -88,15 +90,35 @@ void listUsersWithJobs(sqlite3* db) {
         const unsigned char* titleText = sqlite3_column_text(stmt, 3);
         const unsigned char* companyText = sqlite3_column_text(stmt, 4);
 
-        string title = titleText ? reinterpret_cast<const char*>(titleText) : "No Job";
-        string company = companyText ? reinterpret_cast<const char*>(companyText) : "-";
+        string title = titleText ? reinterpret_cast<const char*>(titleText) : "";
+        string company = companyText ? reinterpret_cast<const char*>(companyText) : "";
 
-        cout << "ID: " << id
-             << " | Name: " << name
-             << " | Age: " << age
-             << " | Job: " << title
-             << " | Company: " << company
-             << endl;
+        // 🔹 New user detected
+        if (id != currentUserId) {
+            // print "No Jobs" for previous user if needed
+            if (currentUserId != -1 && !hasJob) {
+                cout << "    - No Jobs\n";
+            }
+
+            cout << "\nID: " << id
+                 << " | Name: " << name
+                 << " | Age: " << age
+                 << endl;
+
+            currentUserId = id;
+            hasJob = false;
+        }
+
+        // 🔹 Print job if exists
+        if (!title.empty()) {
+            cout << "    - " << title << " @ " << company << endl;
+            hasJob = true;
+        }
+    }
+
+    // 🔹 Handle last user with no jobs
+    if (currentUserId != -1 && !hasJob) {
+        cout << "    - No Jobs\n";
     }
 
     sqlite3_finalize(stmt);
@@ -136,7 +158,7 @@ int main() {
                 addJob(db);
                 break;
             case 3:
-                listUsersWithJobs(db);
+                listUsersWithJobsGrouped(db);
                 break;
             case 4:
                 sqlite3_close(db);
