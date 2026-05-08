@@ -1,18 +1,39 @@
 #include <iostream>
-#include <vector>
 #include <string>
 #include "sqlite3.h"
 
 using namespace std;
 
-// 🔹 User struct
-struct User {
-    int id;
+// 🔹 Add User
+void addUser(sqlite3* db) {
+    const char* sql = "INSERT INTO users (name, age) VALUES (?, ?);";
+    sqlite3_stmt* stmt;
+
+    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+
     string name;
     int age;
-};
 
-// add job
+    cout << "Enter name: ";
+    getline(cin, name);
+
+    cout << "Enter age: ";
+    cin >> age;
+    cin.ignore();
+
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, age);
+
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        cout << "User added successfully!\n";
+    } else {
+        cout << "Error adding user\n";
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+// 🔹 Add Job
 void addJob(sqlite3* db) {
     const char* sql = "INSERT INTO jobs (user_id, title, company) VALUES (?, ?, ?);";
     sqlite3_stmt* stmt;
@@ -45,97 +66,37 @@ void addJob(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
-// 🔹 Add user
-void addUser(sqlite3* db) {
-    const char* sql = "INSERT INTO users (name, age) VALUES (?, ?);";
+// 🔹 List Users + Jobs (JOIN)
+void listUsersWithJobs(sqlite3* db) {
+    const char* sql =
+        "SELECT u.id, u.name, u.age, j.title, j.company "
+        "FROM users u "
+        "LEFT JOIN jobs j ON u.id = j.user_id "
+        "ORDER BY u.id;";
+
     sqlite3_stmt* stmt;
 
     sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
 
-    string name;
-    int age;
-
-    cout << "Enter name: ";
-    getline(cin, name);
-
-    cout << "Enter age: ";
-    cin >> age;
-    cin.ignore();
-
-    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, age);
-
-    if (sqlite3_step(stmt) == SQLITE_DONE) {
-        cout << "User added successfully!\n";
-    } else {
-        cout << "Error adding user\n";
-    }
-
-    sqlite3_finalize(stmt);
-}
-
-// 🔹 List users
-void listUsers(sqlite3* db) {
-    const char* sql = "SELECT id, name, age FROM users;";
-    sqlite3_stmt* stmt;
-
-    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-
-    cout << "\n--- Users ---\n";
+    cout << "\n--- Users + Jobs ---\n";
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        cout << "ID: " << sqlite3_column_int(stmt, 0)
-             << " | Name: " << sqlite3_column_text(stmt, 1)
-             << " | Age: " << sqlite3_column_int(stmt, 2)
+        int id = sqlite3_column_int(stmt, 0);
+        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        int age = sqlite3_column_int(stmt, 2);
+
+        const unsigned char* titleText = sqlite3_column_text(stmt, 3);
+        const unsigned char* companyText = sqlite3_column_text(stmt, 4);
+
+        string title = titleText ? reinterpret_cast<const char*>(titleText) : "No Job";
+        string company = companyText ? reinterpret_cast<const char*>(companyText) : "-";
+
+        cout << "ID: " << id
+             << " | Name: " << name
+             << " | Age: " << age
+             << " | Job: " << title
+             << " | Company: " << company
              << endl;
-    }
-
-    sqlite3_finalize(stmt);
-}
-
-// 🔹 Search user by name
-void searchUser(sqlite3* db) {
-    const char* sql = "SELECT id, name, age FROM users WHERE name = ?;";
-    sqlite3_stmt* stmt;
-
-    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-
-    string name;
-    cout << "Enter name to search: ";
-    getline(cin, name);
-
-    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
-
-    cout << "\n--- Search Results ---\n";
-
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        cout << "ID: " << sqlite3_column_int(stmt, 0)
-             << " | Name: " << sqlite3_column_text(stmt, 1)
-             << " | Age: " << sqlite3_column_int(stmt, 2)
-             << endl;
-    }
-
-    sqlite3_finalize(stmt);
-}
-
-// 🔹 Delete user by ID
-void deleteUser(sqlite3* db) {
-    const char* sql = "DELETE FROM users WHERE id = ?;";
-    sqlite3_stmt* stmt;
-
-    sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
-
-    int id;
-    cout << "Enter user ID to delete: ";
-    cin >> id;
-    cin.ignore();
-
-    sqlite3_bind_int(stmt, 1, id);
-
-    if (sqlite3_step(stmt) == SQLITE_DONE) {
-        cout << "User deleted successfully!\n";
-    } else {
-        cout << "Error deleting user\n";
     }
 
     sqlite3_finalize(stmt);
@@ -150,15 +111,17 @@ int main() {
         return 1;
     }
 
+    // 🔥 Enable foreign keys
+    sqlite3_exec(db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
+
     cout << "Database connected!\n";
 
     while (true) {
         cout << "\n===== USER MANAGER =====\n";
         cout << "1. Add User\n";
-        cout << "2. List Users\n";
-        cout << "3. Search User\n";
-        cout << "4. Delete User\n";
-        cout << "5. Exit\n";
+        cout << "2. Add Job\n";
+        cout << "3. List Users + Jobs\n";
+        cout << "4. Exit\n";
         cout << "Choose option: ";
 
         int choice;
@@ -170,15 +133,12 @@ int main() {
                 addUser(db);
                 break;
             case 2:
-                listUsers(db);
+                addJob(db);
                 break;
             case 3:
-                searchUser(db);
+                listUsersWithJobs(db);
                 break;
             case 4:
-                deleteUser(db);
-                break;
-            case 5:
                 sqlite3_close(db);
                 cout << "Goodbye!\n";
                 cout << "Press Enter to exit...";
