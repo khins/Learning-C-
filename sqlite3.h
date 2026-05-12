@@ -31,6 +31,7 @@ int sqlite3_bind_text(
 int sqlite3_bind_int(sqlite3_stmt* stmt, int index, int value);
 int sqlite3_step(sqlite3_stmt* stmt);
 int sqlite3_column_int(sqlite3_stmt* stmt, int column);
+double sqlite3_column_double(sqlite3_stmt* stmt, int column);
 const unsigned char* sqlite3_column_text(sqlite3_stmt* stmt, int column);
 int sqlite3_reset(sqlite3_stmt* stmt);
 int sqlite3_clear_bindings(sqlite3_stmt* stmt);

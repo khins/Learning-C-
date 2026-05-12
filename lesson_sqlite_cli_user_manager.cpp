@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include "sqlite3.h"
 
@@ -11,6 +12,178 @@ bool isValidName(const string& name) {
 
 bool isValidAge(int age) {
     return age >= 0 && age <= 120;
+}
+
+void exportToCsv(sqlite3* db) {
+    const char* sql =
+        "SELECT u.id, u.name, u.age, j.title, j.company "
+        "FROM users u "
+        "LEFT JOIN jobs j ON u.id = j.user_id "
+        "ORDER BY u.id;";
+
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        cerr << "Failed to prepare export query: "
+             << sqlite3_errmsg(db)
+             << endl;
+        return;
+    }
+
+    ofstream file("users_export.csv");
+
+    if (!file.is_open()) {
+        cerr << "Failed to create CSV file." << endl;
+        sqlite3_finalize(stmt);
+
+        cout << "Press Enter to exit...";
+        cin.get();
+
+        return;
+    }
+
+    // CSV header
+    file << "id,name,age,job_title,company\n";
+
+    int rowCount = 0;
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+
+        const unsigned char* nameText = sqlite3_column_text(stmt, 1);
+        int age = sqlite3_column_int(stmt, 2);
+
+        const unsigned char* titleText = sqlite3_column_text(stmt, 3);
+        const unsigned char* companyText = sqlite3_column_text(stmt, 4);
+
+        string name =
+            nameText ? reinterpret_cast<const char*>(nameText) : "";
+
+        string title =
+            titleText ? reinterpret_cast<const char*>(titleText) : "";
+
+        string company =
+            companyText ? reinterpret_cast<const char*>(companyText) : "";
+
+        file << id << ","
+             << "\"" << name << "\","
+             << age << ","
+             << "\"" << title << "\","
+             << "\"" << company << "\""
+             << "\n";
+
+        rowCount++;
+    }
+
+    file.close();
+    sqlite3_finalize(stmt);
+
+    cout << "Export complete!" << endl;
+    cout << rowCount << " row(s) written to users_export.csv" << endl;
+}
+
+// 🔹 View Analytics
+void viewAnalytics(sqlite3* db) {
+
+    sqlite3_stmt* stmt;
+
+    cout << "\n===== ANALYTICS DASHBOARD =====\n";
+
+    // 🔹 Total Users
+    const char* totalUsersSql =
+        "SELECT COUNT(*) FROM users;";
+
+    sqlite3_prepare_v2(db, totalUsersSql, -1, &stmt, nullptr);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        cout << "Total Users: "
+             << sqlite3_column_int(stmt, 0)
+             << endl;
+    }
+
+    sqlite3_finalize(stmt);
+
+    // 🔹 Average Age
+    const char* avgAgeSql =
+        "SELECT AVG(age) FROM users;";
+
+    sqlite3_prepare_v2(db, avgAgeSql, -1, &stmt, nullptr);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        cout << "Average Age: "
+             << sqlite3_column_double(stmt, 0)
+             << endl;
+    }
+
+    sqlite3_finalize(stmt);
+
+    // 🔹 Oldest User
+    const char* oldestUserSql =
+        "SELECT name, age "
+        "FROM users "
+        "ORDER BY age DESC "
+        "LIMIT 1;";
+
+    sqlite3_prepare_v2(db, oldestUserSql, -1, &stmt, nullptr);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+
+        const char* name =
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+
+        int age = sqlite3_column_int(stmt, 1);
+
+        cout << "Oldest User: "
+             << name
+             << " (" << age << ")"
+             << endl;
+    }
+
+    sqlite3_finalize(stmt);
+
+    // 🔹 Users Without Jobs
+    const char* noJobsSql =
+        "SELECT COUNT(*) "
+        "FROM users u "
+        "LEFT JOIN jobs j ON u.id = j.user_id "
+        "WHERE j.id IS NULL;";
+
+    sqlite3_prepare_v2(db, noJobsSql, -1, &stmt, nullptr);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        cout << "Users Without Jobs: "
+             << sqlite3_column_int(stmt, 0)
+             << endl;
+    }
+
+    sqlite3_finalize(stmt);
+
+    // 🔹 Top Companies
+    const char* topCompaniesSql =
+        "SELECT company, COUNT(*) as total "
+        "FROM jobs "
+        "GROUP BY company "
+        "ORDER BY total DESC;";
+
+    sqlite3_prepare_v2(db, topCompaniesSql, -1, &stmt, nullptr);
+
+    cout << "\n--- Top Companies ---\n";
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+
+        const char* company =
+            reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+
+        int total = sqlite3_column_int(stmt, 1);
+
+        cout << company
+             << " -> "
+             << total
+             << " employee(s)"
+             << endl;
+    }
+
+    sqlite3_finalize(stmt);
 }
 
 // 🔹 Add User
@@ -232,6 +405,8 @@ int main() {
         cout << "4. Update Job\n";
         cout << "5. Delete Job\n";
         cout << "6. Exit\n";
+        cout << "7. View Analytics\n";
+        cout << "8. Export to CSV\n";
         cout << "Choose option: ";
 
         int choice;
@@ -268,6 +443,12 @@ int main() {
                 cout << "Press Enter to exit...";
                 cin.get();
                 return 0;
+            case 7:
+                viewAnalytics(db);
+                break;
+            case 8:
+                exportToCsv(db);
+                break;
             default:
                 cout << "Invalid choice\n";
         }
