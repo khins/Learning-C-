@@ -131,6 +131,7 @@ int main() {
 
     int total = 0;
 
+    // auto iter = numbers.begin() allows the compiler to deduce the iterator type
     for (auto iter = numbers.begin(); iter != numbers.end(); ++iter) {
         total += *iter;
     }
@@ -143,6 +144,7 @@ int main() {
 
     string evenValues;
 
+    // Filter even numbers using iterator
     for (auto iter = numbers.begin(); iter != numbers.end(); ++iter) {
         if (*iter % 2 == 0) {
             cout << *iter << " ";
